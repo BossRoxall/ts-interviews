@@ -1,0 +1,15 @@
+.DS_Store
+
+# Interviewer notes and reference solutions never leave the interviewer's machine.
+/interviewer/
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Node
+node_modules/
+
+# kustomize --enable-helm writes the inflated chart here
+infra/deployments/*/charts/

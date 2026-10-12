@@ -1,0 +1,19 @@
+{
+  "name": "rate-limiter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Per-key rate limiter with an HTTP wrapper",
+  "type": "module",
+  "engines": {
+    "node": ">=23.6"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "start": "node src/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}
