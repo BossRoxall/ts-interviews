@@ -1,0 +1,112 @@
+# Chart defaults. Environment overlays live under infra/deployments/<env>/values.yaml
+# and override only what differs.
+
+replicaCount: 3
+revisionHistoryLimit: 3
+
+image:
+  repository: registry.gitlab.com/turionspace/interviews/rate-limiter
+  # Defaults to Chart.AppVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  # The service never talks to the Kubernetes API.
+  automount: false
+  annotations: {}
+  name: ""
+
+# Optional Role/ClusterRole for the service account. Off by default.
+rbac:
+  create: false
+  clusterWide: false
+  rules: []
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+containerPort: 8080
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Rendered into the rate-limiter ConfigMap as RATE_LIMIT_* environment variables.
+rateLimit:
+  capacity: 100
+  intervalSeconds: 60
+  refillAmount: 10
+  refillIntervalSeconds: 6
+
+# Extra container environment variables.
+env: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+terminationGracePeriodSeconds: 30
+
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+# Spread replicas across zones and nodes where the cluster allows it.
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

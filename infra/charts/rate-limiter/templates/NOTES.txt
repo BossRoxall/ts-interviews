@@ -1,0 +1,4 @@
+{{ include "rate-limiter.fullname" . }} is listening on port {{ .Values.service.port }} of Service {{ include "rate-limiter.fullname" . }}.{{ .Release.Namespace }}.
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "rate-limiter.fullname" . }} 8080:{{ .Values.service.port }}
+  curl -s -XPOST localhost:8080/v1/check -d '{"key": "alice"}'
