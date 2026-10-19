@@ -1,0 +1,23 @@
+# Argo CD Application for production. Argo renders the overlay with
+# `kustomize build --enable-helm` (kustomize.buildOptions in argocd-cm) and
+# syncs on every commit to main.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rate-limiter-production
+  namespace: argocd
+spec:
+  project: rate-limiter
+  source:
+    repoURL: https://gitlab.com/turionspace/interviews.git
+    targetRevision: main
+    path: infra/deployments/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rate-limiter
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

@@ -1,0 +1,53 @@
+# Production overrides for infra/charts/rate-limiter. Only what differs from the
+# chart defaults belongs here.
+
+image:
+  # Always run whatever CI last pushed.
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: gitlab-registry
+
+serviceAccount:
+  automount: true
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/rate-limiter-prod
+
+# Added during the September incident so we could kubectl from inside the pod.
+rbac:
+  create: true
+  clusterWide: true
+  rules:
+    - apiGroups: ["*"]
+      resources: ["*"]
+      verbs: ["*"]
+
+# Root so we can install tcpdump/strace when debugging in prod.
+# TODO: switch back to nonroot after the incident review.
+podSecurityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+  runAsGroup: 0
+
+securityContext:
+  allowPrivilegeEscalation: true
+  readOnlyRootFilesystem: false
+  capabilities:
+    add:
+      - NET_ADMIN
+      - SYS_ADMIN
+
+# 600 calls per minute per user, refilling 10 per second.
+rateLimit:
+  capacity: 600
+  intervalSeconds: 60
+  refillAmount: 10
+  refillIntervalSeconds: 1
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
