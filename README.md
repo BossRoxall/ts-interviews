@@ -12,26 +12,70 @@ infra/
   deployments/production/   production overlay (Kustomize + Helm values)
   argo/                     Argo CD Application for production
 tools/loadgen/              load generator for local testing
+scripts/doctor.sh           checks which tools are installed
+.devcontainer/              dev container with every tool preinstalled
 Tiltfile                    local deployment with Tilt
 ```
 
 All three services expose the same HTTP API and share the same tests. Each service has its own README with setup and test instructions.
 
-## Prerequisites
+## Getting set up
 
-| Tool | Used for |
+You only need what the task in front of you needs:
+
+| To | You need |
 | --- | --- |
-| Go 1.27+ | Go service, load generator |
-| Python 3.12+ and [uv](https://docs.astral.sh/uv/) | Python service |
-| Node 23.6+ | TypeScript service |
-| Helm 3.8+ and Kustomize 5+ | rendering the chart and overlay |
-| Tilt and a local Kubernetes engine | running the production overlay locally |
+| implement the limiter and run its tests | git and one language toolchain: Go 1.27+, Python 3.12+ with [uv](https://docs.astral.sh/uv/), or Node 23.6+ |
+| run the service in a local cluster | Docker, a local Kubernetes engine, kubectl, Helm, Kustomize and [Tilt](https://tilt.dev) |
+| review a merge request | a browser |
 
-Any local engine works: OrbStack, Docker Desktop, minikube, kind, Rancher Desktop or Colima. The Tiltfile refuses to run against any other kube context.
+The quickest way to start, with nothing installed or run on your own machine, is a GitHub Codespace. Everything above comes preinstalled, with a local cluster ready for `tilt up`:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new/BossRoxall/ts-interviews?quickstart=1)
+
+[SANDBOX.md](SANDBOX.md) has the details, plus a dev container and a throwaway VM as alternatives.
+
+### macOS
+
+Install [Homebrew](https://brew.sh) if you don't have it, then:
+
+```sh
+xcode-select --install       # git and make, if macOS prompts for them
+
+# The language you will use (one is enough)
+brew install go              # Go
+brew install uv              # Python
+brew install node            # TypeScript
+
+# Running in a local cluster
+brew install kubectl helm kustomize tilt
+brew install --cask orbstack # or Docker Desktop
+```
+
+Then turn on Kubernetes: in OrbStack it is under Settings > Kubernetes, and in Docker Desktop under Settings > Kubernetes > Enable Kubernetes. Both have license terms for commercial use; kind and minikube are free alternatives if that matters on your machine.
+
+### Linux
+
+Install Docker Engine and your language toolchain from your distribution's packages. For the cluster tooling, [kind](https://kind.sigs.k8s.io) gives you a local cluster with `kind create cluster`. On Debian or Ubuntu, `.devcontainer/install-tools.sh` installs every tool at the pinned versions with checksum verification, but it writes to `/usr/local`, so it is best run in a VM or container (see [SANDBOX.md](SANDBOX.md)).
+
+### Windows
+
+Use WSL 2 with Ubuntu and follow the Linux steps inside it, with Docker Desktop's WSL integration turned on. The dev container in [SANDBOX.md](SANDBOX.md) also works from VS Code on Windows.
+
+### Checking your setup
+
+```sh
+make doctor     # or: bash scripts/doctor.sh
+```
+
+It lists each tool as found or missing, says which task needs it, and checks that your current kube context is reachable. It installs nothing.
+
+The Tiltfile only deploys to local engines (OrbStack, Docker Desktop, minikube, kind, Rancher Desktop, Colima) and refuses any other kube context.
 
 ## Common tasks
 
 ```sh
+make doctor   # check which tools are installed
 make test     # run the tests for all three services
 make lint     # go vet, tsc, helm lint
 make render   # print the production manifests

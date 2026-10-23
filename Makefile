@@ -1,8 +1,12 @@
-.PHONY: test test-go test-python test-typescript lint render up down
+.PHONY: doctor test test-go test-python test-typescript lint render up down
 
 GO_DIR := services/rate-limiter-go
 PY_DIR := services/rate-limiter-python
 TS_DIR := services/rate-limiter-typescript
+
+# Show which tools are installed. Installs nothing.
+doctor:
+	@scripts/doctor.sh
 
 test: test-go test-python test-typescript
 

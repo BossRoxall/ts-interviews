@@ -1,0 +1,34 @@
+{
+  "name": "rate-limiter",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  // Docker runs inside the container, so kind and Tilt never touch the host's
+  // Docker or Kubernetes. This feature needs the container to run privileged.
+  // sshd lets `gh codespace ssh` reach the container. Access goes through the
+  // authenticated Codespaces tunnel; no port is exposed publicly.
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:4.1.3": {},
+    "ghcr.io/devcontainers/features/sshd:1.1.0": {}
+  },
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb"
+  },
+  "remoteUser": "vscode",
+  "postStartCommand": "bash .devcontainer/start-cluster.sh",
+  "forwardPorts": [8080, 10350],
+  "portsAttributes": {
+    "8080": { "label": "rate-limiter" },
+    "10350": { "label": "Tilt UI" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-python.python",
+        "tilt-dev.tiltfile"
+      ]
+    }
+  }
+}
