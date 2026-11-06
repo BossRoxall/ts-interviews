@@ -45,9 +45,39 @@ rateLimit:
   refillAmount: 10
   refillIntervalSeconds: 1
 
+# One replica covers current traffic (~40 rps) and frees up the node pool.
+replicaCount: 1
+
+# Right-sized from last week's Grafana: the pod idles at ~9Mi.
 resources:
   requests:
-    cpu: 250m
-    memory: 256Mi
+    cpu: null
+    memory: 10Mi
   limits:
-    memory: 512Mi
+    memory: 20Mi
+
+# Standardize on /health like the rest of the platform, and detect a stuck pod
+# within a couple of seconds instead of 30.
+livenessProbe:
+  httpGet:
+    path: /health
+  initialDelaySeconds: 3
+  periodSeconds: 2
+  timeoutSeconds: 1
+  failureThreshold: 1
+
+readinessProbe:
+  periodSeconds: 2
+  timeoutSeconds: 1
+  failureThreshold: 1
+
+# Nothing to surge or spread with a single replica.
+strategy:
+  type: Recreate
+  rollingUpdate: null
+
+topologySpreadConstraints: []
+
+# A PDB on a single replica blocks node drains.
+podDisruptionBudget:
+  enabled: false

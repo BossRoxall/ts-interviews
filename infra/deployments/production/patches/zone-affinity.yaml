@@ -1,0 +1,20 @@
+# Keep the limiter in the same zone as the API gateway to avoid cross-AZ
+# latency and data transfer charges.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rate-limiter
+  namespace: rate-limiter
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values:
+                      - us-west-2a
