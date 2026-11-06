@@ -1,0 +1,72 @@
+{{- if .Values.redis.enabled -}}
+# Redis holds the limiter state so every replica sees the same buckets.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rate-limiter.fullname" . }}-redis
+  namespace: rate-limiter
+  labels:
+    {{- include "rate-limiter.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "rate-limiter.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "rate-limiter.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis
+    spec:
+      initContainers:
+        # Redis logs a warning on startup unless overcommit is enabled, and
+        # BGSAVE can fail without it.
+        - name: sysctl
+          image: busybox:1.38.0
+          command: ["sh", "-c", "sysctl -w vm.overcommit_memory=1"]
+          securityContext:
+            privileged: true
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          args:
+            - --requirepass
+            - $(REDIS_PASSWORD)
+            - --save
+            - "3600 1"
+          env:
+            - name: REDIS_PASSWORD
+              value: {{ .Values.redis.password | quote }}
+          ports:
+            - name: redis
+              containerPort: 6379
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+        # - name: data
+        #   persistentVolumeClaim:
+        #     claimName: rate-limiter-redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rate-limiter.fullname" . }}-redis
+  namespace: rate-limiter
+  labels:
+    {{- include "rate-limiter.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: {{ .Values.redis.servicePort }}
+      targetPort: redis
+  selector:
+    {{- include "rate-limiter.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+{{- end }}
