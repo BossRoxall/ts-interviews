@@ -25,3 +25,6 @@ helmCharts:
 
 resources:
   - namespace.yaml
+
+patches:
+  - path: patches/zone-affinity.yaml
