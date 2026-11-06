@@ -110,3 +110,16 @@ topologySpreadConstraints:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+# Shared limiter state. Off by default; the app side lands in a seperate MR.
+redis:
+  enabled: false
+  image: redis:7
+  servicePort: 6379
+  password: ""
+  backup:
+    enabled: false
+    schedule: "0 3 * * *"
+    redis_host: rate-limiter-redis
+    bucket: ""
+    roleArn: ""
