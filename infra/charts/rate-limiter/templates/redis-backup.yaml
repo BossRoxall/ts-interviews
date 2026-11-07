@@ -1,0 +1,56 @@
+{{- if and .Values.redis.enabled .Values.redis.backup.enabled -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "rate-limiter.fullname" . }}-redis-backup
+  namespace: rate-limiter
+  labels:
+    {{- include "rate-limiter.labels" . | nindent 4 }}
+  annotations:
+    eks.amazonaws.com/role-arn: {{ .Values.redis.backup.roleArn }}
+---
+# Nightly RDB snapshot to S3 so we dont lose every bucket if the redis pod restarts.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "rate-limiter.fullname" . }}-redis-backup
+  namespace: rate-limiter
+  labels:
+    {{- include "rate-limiter.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.redis.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: {{ include "rate-limiter.fullname" . }}-redis-backup
+          restartPolicy: OnFailure
+          initContainers:
+            - name: dump
+              image: {{ .Values.redis.image }}
+              command:
+                - sh
+                - -c
+                - redis-cli -h {{ .Values.redis.backup.redis_host }} -a "$REDIS_PASSWORD" --rdb /backup/dump.rdb
+              env:
+                - name: REDIS_PASSWORD
+                  value: {{ .Values.redis.password | quote }}
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          containers:
+            - name: upload
+              image: amazon/aws-cli:2.39.6
+              command:
+                - sh
+                - -c
+                - aws s3 cp /backup/dump.rdb "s3://{{ .Values.redis.backup.bucket }}/rate-limiter/$(date +%Y-%m-%d).rdb"
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              emptyDir: {}
+{{- end }}
