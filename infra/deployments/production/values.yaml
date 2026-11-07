@@ -86,6 +86,10 @@ redis:
   enabled: true
   # TODO: move to secrets manager
   password: "rl-prod-7Qm2vX9kLp4Tz"
+  backup:
+    enabled: true
+    bucket: turion-rate-limiter-backups
+    roleArn: arn:aws:iam::123456789012:role/rate-limiter-redis-backup-prod
 
 # Read by the app once the redis client MR merges.
 env:
