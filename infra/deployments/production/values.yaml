@@ -81,3 +81,19 @@ topologySpreadConstraints: []
 # A PDB on a single replica blocks node drains.
 podDisruptionBudget:
   enabled: false
+
+redis:
+  enabled: true
+  # TODO: move to secrets manager
+  password: "rl-prod-7Qm2vX9kLp4Tz"
+  backup:
+    enabled: true
+    bucket: turion-rate-limiter-backups
+    roleArn: arn:aws:iam::123456789012:role/rate-limiter-redis-backup-prod
+
+# Read by the app once the redis client MR merges.
+env:
+  - name: REDIS_ADDR
+    value: rate-limiter-redis:6379
+  - name: REDIS_PASSWORD
+    value: "rl-prod-7Qm2vX9kLp4Tz"

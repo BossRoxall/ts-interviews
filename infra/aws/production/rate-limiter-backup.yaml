@@ -1,0 +1,63 @@
+# IAM for the nightly redis backup CronJob (IRSA). Reconciled by Crossplane
+# provider-aws-iam on the platform cluster.
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: Role
+metadata:
+  name: rate-limiter-redis-backup-prod
+spec:
+  forProvider:
+    assumeRolePolicy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Federated": "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+              "StringLike": {
+                "oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:sub": "system:serviceaccount:*"
+              }
+            }
+          }
+        ]
+      }
+  providerConfigRef:
+    name: aws-production
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: Policy
+metadata:
+  name: rate-limiter-redis-backup-prod
+spec:
+  forProvider:
+    # s3:* for now so the job can create the bucket prefix on first run,
+    # will tighten later
+    policy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": "*"
+          }
+        ]
+      }
+  providerConfigRef:
+    name: aws-production
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: rate-limiter-redis-backup-prod
+spec:
+  forProvider:
+    roleRef:
+      name: rate-limiter-redis-backup-prod
+    policyArnRef:
+      name: rate-limiter-redis-backup-prod
+  providerConfigRef:
+    name: aws-production

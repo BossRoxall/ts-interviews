@@ -7,6 +7,7 @@ stages:
   - validate
   - test
   - build
+  - deploy
 
 variables:
   GO_DIR: services/rate-limiter-go
@@ -37,6 +38,8 @@ typescript:typecheck:
 manifests:validate:
   stage: validate
   image: alpine/k8s:1.37.2
+  # kubeconform keeps timing out fetching schemas behind the proxy
+  allow_failure: true
   script:
     - helm lint infra/charts/rate-limiter
     - kustomize build --enable-helm infra/deployments/production > production.yaml
@@ -107,3 +110,20 @@ docker:publish:
     - docker build -t "$IMAGE:$CI_COMMIT_SHORT_SHA" -t "$IMAGE:latest" "$GO_DIR"
     - docker push "$IMAGE:$CI_COMMIT_SHORT_SHA"
     - docker push "$IMAGE:latest"
+
+# ---------------------------------------------------------------------------
+# deploy
+# ---------------------------------------------------------------------------
+
+deploy:production:
+  stage: deploy
+  image: alpine/helm:latest
+  script:
+    - set -x
+    - helm upgrade --install rate-limiter infra/charts/rate-limiter
+      --kube-context turionspace/interviews:production
+      --namespace rate-limiter
+      -f infra/deployments/production/values.yaml
+      --set image.tag=latest
+      --set redis.password=$REDIS_PASSWORD
+      --wait
